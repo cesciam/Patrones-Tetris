@@ -1,8 +1,8 @@
 package examen.principal;
 
-import examen.principal.BL.ClienteShape;
-import examen.principal.Entity.AShape;
-import examen.principal.Entity.NoShape;
+import examen.principal.Principal.ClienteShape;
+import examen.principal.iPrototipo.AShape;
+import examen.principal.Prototipo.NoShape;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -136,8 +136,9 @@ public class Board extends JPanel implements ActionListener {
         /* 1. Se pintan todas las figuras que ya han tocado la parte baja del tablero. Todos los cuadrados estan guardados en el array de tablero y podemos acceder a el usando el metodo shapeAt() */
         for (int i = 0; i < BoardHeight; ++i) {
             for (int j = 0; j < BoardWidth; ++j) {
-                Shape.Tetrominoes shape = shapeAt(j, BoardHeight - i - 1);
-                if (shape != Shape.Tetrominoes.NoShape)
+                AShape shape = shapeAt(j, BoardHeight - i - 1);
+                //if (shape != Shape.Tetrominoes.NoShape)
+                if(!(shape instanceof NoShape))
                     drawSquare(g, 0 + j * squareWidth(),
                                boardTop + i * squareHeight(), shape);
             }
@@ -151,7 +152,7 @@ public class Board extends JPanel implements ActionListener {
                 int y = curY - curPiece.y(i);
                 drawSquare(g, 0 + x * squareWidth(),
                            boardTop + (BoardHeight - y - 1) * squareHeight(),
-                           curPiece.getShape());
+                           curPiece);
             }
         }
     }
@@ -186,7 +187,7 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
     private void clearBoard()
     {
         for (int i = 0; i < BoardHeight * BoardWidth; ++i)
-            board[i] = Shape.Tetrominoes.NoShape;
+            board[i] = clienteShape.getNoShape();
     }
 
     /* Este metodo anade la pieza que esta cayendo al array del tablero (board). Se llamara cuando la pieza ya haya terminado de caer, asi que debemos comprobar si ha hecho una linea que hay que borrar o no, llamando para ello al metodo removeFullLines(). Por ultimo, intentamos crear una nueva pieza para seguir jugando. */
@@ -195,7 +196,7 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
         for (int i = 0; i < 4; ++i) {
             int x = curX + curPiece.x(i);
             int y = curY - curPiece.y(i);
-            board[(y * BoardWidth) + x] = curPiece.getShape();
+            board[(y * BoardWidth) + x] = curPiece;
         }
 
         removeFullLines();
@@ -212,12 +213,12 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
      - asignar a la barra de estado statusbar el texto "game over" */
     private void newPiece()
     {
-        curPiece.setRandomShape();
+        curPiece = clienteShape.getRandomShape();
         curX = BoardWidth / 2 + 1;
         curY = BoardHeight - 1 + curPiece.minY();
 
         if (!tryMove(curPiece, curX, curY)) {
-            curPiece.setShape(Shape.Tetrominoes.NoShape);
+            curPiece = clienteShape.getRandomShape();
             timer.stop();
             isStarted = false;
             statusbar.setText("game over");
@@ -228,14 +229,14 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
      1. que queramos salir de los limites del tablero.
      2. que haya tocado otra pieza
      Si no ocurre ninguno de estos casos, la pieza se puede mover, por lo que actualizamos su posicion, repintamos y devolvemos verdadero. */
-    private boolean tryMove(Shape newPiece, int newX, int newY)
+    private boolean tryMove(AShape newPiece, int newX, int newY)
     {
         for (int i = 0; i < 4; ++i) {
             int x = newX + newPiece.x(i);
             int y = newY - newPiece.y(i);
             if (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight)
                 return false;
-            if (shapeAt(x, y) != Shape.Tetrominoes.NoShape)
+            if (!(shapeAt(x, y) instanceof NoShape))
                 return false;
         }
 
@@ -270,7 +271,7 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
             boolean lineIsFull = true;
 
             for (int j = 0; j < BoardWidth; ++j) {
-                if (shapeAt(j, i) == Shape.Tetrominoes.NoShape) {
+                if (shapeAt(j, i) instanceof NoShape) {
                     lineIsFull = false;
                     break;
                 }
@@ -290,7 +291,7 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
             numLinesRemoved += numFullLines;
             statusbar.setText(String.valueOf(numLinesRemoved));
             isFallingFinished = true;
-            curPiece.setShape(Shape.Tetrominoes.NoShape);
+            curPiece = clienteShape.getNoShape();
             repaint();
         }
      }
@@ -326,7 +327,7 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
     class TAdapter extends KeyAdapter {
          public void keyPressed(KeyEvent e) {
 
-             if (!isStarted || curPiece.getShape() == Shape.Tetrominoes.NoShape) {
+             if (!isStarted || curPiece instanceof  NoShape) {
                  return;
              }
 
