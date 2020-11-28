@@ -1,6 +1,8 @@
-package examen.principal;
+package examen.principal.Memento;
 
 import examen.principal.Principal.ClienteShape;
+import examen.principal.Prototipo.LineShape;
+import examen.principal.Tetris;
 import examen.principal.iPrototipo.AShape;
 import examen.principal.Prototipo.NoShape;
 
@@ -46,6 +48,11 @@ public class Board extends JPanel implements ActionListener {
     boolean isPaused = false;
     Timer timer;
 
+    //Vidas del jugador
+    JLabel lifes;
+    int lifesCount;
+    Tetris parentBoard;
+
     /* Constructor */
     public Board(Tetris parent) {
 
@@ -53,7 +60,9 @@ public class Board extends JPanel implements ActionListener {
        // para que desde ahora tenga el foco y el imput del teclado
        setFocusable(true);
 
-        clienteShape = new ClienteShape();
+        parentBoard = parent;
+
+       clienteShape = new ClienteShape();
        // Generamos una nueva pieza
        curPiece = clienteShape.getNoShape();
 
@@ -65,8 +74,14 @@ public class Board extends JPanel implements ActionListener {
        // Asignamos la barra de estado
        statusbar =  parent.getStatusBar();
 
+       //Asignamos la barra de vidas
+        lifes = parent.getLifes();
+        lifesCount = 3;
+
        // Iniciamos el tablero con piezas vacias hasta el ancho y alto indicados
        board = new AShape[BoardWidth * BoardHeight];
+
+
 
        addKeyListener(new TAdapter());
        clearBoard();
@@ -190,7 +205,14 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
             board[i] = clienteShape.getNoShape();
     }
 
-    /* Este metodo anade la pieza que esta cayendo al array del tablero (board). Se llamara cuando la pieza ya haya terminado de caer, asi que debemos comprobar si ha hecho una linea que hay que borrar o no, llamando para ello al metodo removeFullLines(). Por ultimo, intentamos crear una nueva pieza para seguir jugando. */
+    private void clearBoard(AShape[] boardP)
+    {
+        board = boardP;
+    }
+
+    /* Este metodo anade la pieza que esta cayendo al array del tablero (board). Se llamara cuando la pieza ya haya terminado de caer,
+    asi que debemos comprobar si ha hecho una linea que hay que borrar o no, llamando para ello al metodo removeFullLines().
+    Por ultimo, intentamos crear una nueva pieza para seguir jugando. */
     private void pieceDropped()
     {
         for (int i = 0; i < 4; ++i) {
@@ -217,11 +239,19 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
         curX = BoardWidth / 2 + 1;
         curY = BoardHeight - 1 + curPiece.minY();
 
+
         if (!tryMove(curPiece, curX, curY)) {
-            curPiece = clienteShape.getRandomShape();
-            timer.stop();
-            isStarted = false;
-            statusbar.setText("game over");
+            if(lifesCount > 0){
+                lifesCount = lifesCount - 1;
+                clearBoard();
+                parentBoard.Devolver_Memento(lifesCount);
+                lifes.setText("Vidas: "+lifesCount);
+            }else {
+                curPiece = clienteShape.getRandomShape();
+                timer.stop();
+                isStarted = false;
+                statusbar.setText("game over");
+            }
         }
     }
 
@@ -288,7 +318,11 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
 
 
         if (numFullLines > 0) {
-            numLinesRemoved += numFullLines;
+            for(int i = 0; i< numFullLines; i++)
+            {
+                numLinesRemoved = numLinesRemoved +1 ;
+                checkPoints();
+            }
             statusbar.setText(String.valueOf(numLinesRemoved));
             isFallingFinished = true;
             curPiece = clienteShape.getNoShape();
@@ -366,5 +400,27 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
              }
 
          }
+     }
+
+
+     public Memento createMemento(){
+        return new Memento(lifesCount, numLinesRemoved, board);
+     }
+
+     public void setMemento(Memento m){
+        this.numLinesRemoved = m.getNumLinesRemoved();
+        this.lifesCount = m.getLifesCount();
+
+        for(int i =0; i < board.length; i++){
+            board[i] = m.getBoard()[i];
+        }
+
+         statusbar.setText(String.valueOf(numLinesRemoved));
+     }
+
+     public void checkPoints(){
+        if(numLinesRemoved%5 == 0){
+            parentBoard.Actualizar_Memento();
+        }
      }
 }
