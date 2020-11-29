@@ -1,6 +1,8 @@
 package examen.principal;
 
 import examen.principal.Memento.Board;
+import examen.principal.Obsevador.Concreto.Observador;
+import examen.principal.Obsevador.Interfaces.IObservador;
 import examen.principal.Principal.GestorMemento;
 
 import java.awt.BorderLayout;
@@ -25,6 +27,8 @@ public class Tetris extends JFrame {
         gestorMemento = new GestorMemento(this);
         //Board board = new Board(this);
         Board board = gestorMemento.getCreador();
+        IObservador observador = new Observador();
+        board.addObserver(observador);
 
         add(board);
         board.start(); // este metodo arranca el juego

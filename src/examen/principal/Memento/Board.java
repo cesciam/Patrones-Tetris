@@ -1,23 +1,27 @@
 package examen.principal.Memento;
 
+import examen.principal.Obsevador.Interfaces.IObservador;
+import examen.principal.Obsevador.Interfaces.ISujeto;
 import examen.principal.Principal.ClienteShape;
 import examen.principal.Prototipo.LineShape;
+import examen.principal.Prototipo.SquareShape;
 import examen.principal.Tetris;
 import examen.principal.iPrototipo.AShape;
 import examen.principal.Prototipo.NoShape;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-public class Board extends JPanel implements ActionListener {
+public class Board extends JPanel implements ActionListener, ISujeto {
+
+    private ArrayList<IObservador> observadorList = new ArrayList<>();
 
     // Inicializamos algunas variables importantes
 
@@ -236,20 +240,25 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
     private void newPiece()
     {
         curPiece = clienteShape.getRandomShape();
+        if(curPiece instanceof SquareShape)
+            notifyObservers();
         curX = BoardWidth / 2 + 1;
         curY = BoardHeight - 1 + curPiece.minY();
 
 
         if (!tryMove(curPiece, curX, curY)) {
-            if(lifesCount > 0){
+            if(lifesCount > 1){
                 lifesCount = lifesCount - 1;
                 clearBoard();
                 parentBoard.Devolver_Memento(lifesCount);
                 lifes.setText("Vidas: "+lifesCount);
             }else {
                 curPiece = clienteShape.getRandomShape();
+                if(curPiece instanceof SquareShape)
+                    notifyObservers();
                 timer.stop();
                 isStarted = false;
+                lifes.setText("Vidas: "+0);
                 statusbar.setText("game over");
             }
         }
@@ -357,6 +366,23 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
                          x + squareWidth() - 1, y + 1);
     }
 
+    @Override
+    public void addObserver(IObservador o) {
+        observadorList.add(o);
+    }
+
+    @Override
+    public void notifyObservers() {
+        for(IObservador o: observadorList)
+            o.update();
+    }
+
+    @Override
+    public void notifyObservers(int points) {
+        for(IObservador o: observadorList)
+            o.update(points);
+    }
+
     /* Implementacion de los controles por teclado.*/
     class TAdapter extends KeyAdapter {
          public void keyPressed(KeyEvent e) {
@@ -421,6 +447,7 @@ Para implementar el metodo se utilizan dos metodos auxiliares:
      public void checkPoints(){
         if(numLinesRemoved%5 == 0){
             parentBoard.Actualizar_Memento();
+            notifyObservers(numLinesRemoved);
         }
      }
 }
